@@ -163,8 +163,13 @@ function getTable(config) {
 				database.sort((a, b) => {
 					return a[property[8]] <= b[property[8]] ? 1 : -1; //分数
 				});
-				fs.appendFile(basedir + "index.json", JSON.stringify(database), (err) => {
-					if (err) console.log(err);
+				fs.writeFile(basedir + "index.json", JSON.stringify(database), (err) => {
+					if (err) {
+						console.log(err);
+						if (config.callback) config.callback(err);
+						return;
+					}
+					if (config.callback) config.callback(null, database);
 				});
 			}
 		});

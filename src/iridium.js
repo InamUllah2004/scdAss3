@@ -93,8 +93,13 @@ function getTable(config) {
 					database
 				});
 			} else {
-				fs.appendFile(basedir + "index.json", JSON.stringify(database), (err) => {
-					if (err) console.log(err);
+				fs.writeFile(basedir + "index.json", JSON.stringify(database), (err) => {
+					if (err) {
+						console.log(err);
+						if (config.callback) config.callback(err);
+						return;
+					}
+					if (config.callback) config.callback(null, database);
 				});
 			}
 		});
