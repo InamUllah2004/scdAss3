@@ -1,48 +1,59 @@
-name: CI 
-on: 
-    push:
-        branches:
-            - main
-    pull_request:
-        branches:
-            - main  
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-     build-and-test:
-        name: Building and Testing
-        runs-on: ubuntu-latest
-        #When doing repeated jobs, use matrix strategy to define variations
-        strategy:
-         matrix:
-            node-version: [20.x]
-        #Job contains multiple steps
-        steps:
-            # Downloading the repository to run on virtual machine
-            - name: Checkout repository
-              uses: actions/checkout@v4
-            # Setting up Node.js environment
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
-              with:
-               node-version: ${{ matrix.node-version }}
-               # If npm dependencies are already installed, we won't need to install them again from the internet
-               cache: 'npm'
-            # Installing dependencies listed in package.json (clean install)
-            - name: Install dependencies
-              run: npm ci
-            # Checking if Lint is mentioned in package.json scripts, if yes then run linting
-            - name: Lint (if available)
-              run: |
-                if npm run | grep -q "lint"; then
-                  npm run lint --silent
-                else
-                  echo "No lint script found in package.json — skipping lint."
-                fi
-            # Running tests mentioned in package.json scripts
-            - name: Run tests (if available)
-              run: |
-                 if npm run | grep -q "test"; then
-                 npm test --silent || ( echo "Tests failed"; exit 1 )
-                 else
-                 echo "No test script found in package.json — skipping tests."
-                 fi
+  build-and-test:
+    name: Building and Testing
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Node.js
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            echo "Lock file found — running npm ci"
+            npm ci
+          else
+            echo "No lock file found — running npm install"
+            npm install
+          fi
+
+      # Step 4: Run lint if script exists
+      - name: Lint (if available)
+        run: |
+          if npm run | grep -q "lint"; then
+            npm run lint --silent
+          else
+            echo "No lint script found in package.json — skipping lint."
+          fi
+
+      # Step 5: Run tests if script exists
+      - name: Run tests (if available)
+        run: |
+          if npm run | grep -q "test"; then
+            npm test --silent || ( echo "Tests failed"; exit 1 )
+          else
+            echo "No test script found in package.json — skipping tests."
+          fi
