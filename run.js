@@ -23,7 +23,9 @@ const express = require("express");
 const satellite = require("./src/satellite");
 const iridium = require("./src/iridium");
 
+
 const app = express();
+app.use(express.static("public"));
 const PORT = process.env.PORT || 3000;
 
 // Optional: base location
