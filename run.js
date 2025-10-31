@@ -20,6 +20,7 @@
 // */
 
 const express = require("express");
+const fs = require("fs");
 const satellite = require("./src/satellite");
 const iridium = require("./src/iridium");
 
@@ -27,6 +28,12 @@ const iridium = require("./src/iridium");
 const app = express();
 app.use(express.static("public"));
 const PORT = process.env.PORT || 3000;
+
+// Ensure data directory exists
+const dataDir = "./public/data/satellite25544";
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+}
 
 // Optional: base location
 const location = [39.9042, 116.4074, "%E5%8C%97%E4%BA%AC%E5%B8%82", 52, "ChST"];
@@ -62,6 +69,35 @@ app.get("/scrape-iridium", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send("❌ Iridium scraping failed!");
+  }
+});
+
+// Handle satellite data requests
+app.get('/data/satellite25544/index.json', async (req, res) => {
+  const indexPath = './public/data/satellite25544/index.json';
+  
+  try {
+    // Check if the file exists and is not empty
+    if (!fs.existsSync(indexPath) || fs.statSync(indexPath).size === 0) {
+      // Generate the data
+      await satellite.getTable({
+        target: 25544,
+        pages: 4,
+        root: "./public/data/"
+      });
+    }
+    
+    // Read and send the file
+    if (fs.existsSync(indexPath)) {
+      const data = fs.readFileSync(indexPath);
+      res.setHeader('Content-Type', 'application/json');
+      res.send(data);
+    } else {
+      res.status(500).send('Failed to generate satellite data');
+    }
+  } catch (error) {
+    console.error('Error handling satellite data request:', error);
+    res.status(500).send('Internal server error');
   }
 });
 
